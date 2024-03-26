@@ -5,6 +5,10 @@
 **Aluno**: Bruno da Cunha Ferreira
 **Professor**: Dr. Moisés Henrique Ramos Pereira - IFMG
 
+##### Trabalho disponível em:
+
+["https://github.com/brunocferreira/simple-information-retrieval-system.git"](https://github.com/brunocferreira/simple-information-retrieval-system.git)
+
 ## Objetivo
 
 Elaborar um sistema simples de recuperação da informação
