@@ -77,11 +77,17 @@ class Coletor:
         """
         parsed_url = urlparse(url)
         robots_url = urljoin(parsed_url.scheme + "://" +
-                             parsed_url.netloc, "robots.txt")
+                             parsed_url.netloc, "/robots.txt")
         rp = RobotFileParser()
         rp.set_url(robots_url)
-        rp.read()
-        return rp.can_fetch("*", url)
+        # rp.read()
+        # return rp.can_fetch("*", url)
+        try:
+            rp.read()
+            return rp.can_fetch("*", url)
+        except:
+            print(f"Não foi possível ler o arquivo robots.txt de {url}")
+            return False
 
     def extrair_informacoes(self, params_page=None) -> None:
         """

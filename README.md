@@ -111,20 +111,19 @@ A classe Indexador é responsável por gerar um índice invertido a partir das p
 Cada objeto da classe Indexador contém um objeto da classe Coletor, uma lista de títulos tokenizados das páginas web coletadas, um conjunto de stop words em português e um dicionário que armazena o índice invertido.
 
 Atributos:
-
-> - `coletor (Coletor)`: Um objeto da classe Coletor.
-> - `tokenized_titles (list)`: Uma lista de títulos tokenizados das páginas web coletadas.
-> - `stop_words (set)`: Um conjunto de stop words em português.
-> - `inverted_index (dict)`: Um dicionário que armazena o índice invertido.
+`coletor (Coletor)`: O objeto Coletor que coletou os dados.
+`stop_words (set)`: Um conjunto de palavras de parada.
+`inverted_index (dict)`: O índice invertido gerado.
+`F (dict)`: Um dicionário que armazena a frequência de cada token.
 
 Métodos:
-
-> - `inverted_index_generator()`: Gera o índice invertido a partir dos títulos tokenizados.
-> - `save_index()`: Salva o índice invertido em um arquivo JSON.
-> - `weight_tokenize()`: Atualiza os pesos dos tokens no índice invertido.
-> - `add_attr_inverted_index(params=None)`: Adiciona um ou mais atributos da Url ao índice invertido.
-> - `update_index()`: Atualiza o índice invertido com novos dados coletados.
-> - `remove_key_stop_words()`: Remove as stop words da lista de tokens.
+`__init__(self, coletor: Coletor)`: Inicializa um objeto Indexador com o Coletor especificado.
+`inverted_index_generator(self) -> None`: Gera o índice invertido.
+`update_F(self) -> None`: Atualiza a frequência de cada token no índice invertido.
+`save_index(self) -> None`: Salva o índice invertido em um arquivo JSON.
+`weight_tokenize(self) -> None`: Calcula o peso de cada token no índice invertido.
+`add_attr_inverted_index(self, params=None) -> None`: Adiciona atributos ao índice invertido.
+`remove_key_stop_word(self) -> None`: Remove as palavras de parada do índice invertido.
 
 Exemplo:
 
@@ -142,26 +141,19 @@ Exemplo:
 
 ### Buscador.py
 
-A classe Buscador é responsável por realizar pesquisas em um índice invertido.
-
-Cada objeto da classe Buscador contém um índice invertido que é carregado de um arquivo JSON.
+A classe Buscador realiza buscas em um índice invertido.
 
 Atributos:
-
-> - `inverted_index (dict)`: Um dicionário que armazena o índice invertido.
+`inverted_index (dict)`: O índice invertido onde a busca será realizada.
 
 Métodos:
+`__init__(self, index_file: str)`: Inicializa um objeto Buscador com o índice invertido contido no arquivo especificado.
+`deep_search(self, query: str) -> set`: Realiza uma busca em profundidade no índice invertido.
+`width_search(self, query: str) -> set`: Realiza uma busca em largura no índice invertido.
+`rank(self, query: str) -> list`: Realiza um ranqueamento dos documentos com base na consulta de pesquisa.
 
-> - `__init__(index_file)`: O construtor da classe Buscador. Este método é chamado automaticamente quando um objeto da classe Buscador é criado. Ele inicializa o índice invertido que é carregado de um arquivo JSON.
-> - `deep_search(query)`: Realiza uma pesquisa em profundidade no índice invertido. Este método tokeniza a consulta de pesquisa e, para cada token na consulta de pesquisa, percorre todas as chaves no índice invertido. Se o token estiver na chave, ele percorre todos os itens na lista de valores da chave e adiciona o item ao conjunto de links relevantes.
-> - `width_search(query)`: Realiza uma pesquisa em largura no índice invertido. Este método tokeniza a consulta de pesquisa e, para cada chave no índice invertido, percorre todos os tokens na consulta de pesquisa. Se o token estiver na chave, ele percorre todos os itens na lista de valores da chave e adiciona o item ao conjunto de links relevantes.
+Exemplo de uso:
 
-Exemplo:
-
-> > > buscador = Buscador("index-Root.json")
-> > > resultados = buscador.deep_search("IFMG")
-> > > print(resultados)
-> > > {"https://www.ifmg.edu.br"}
-> > > resultados = buscador.width_search("IFMG")
-> > > print(resultados)
-> > > {"https://www.ifmg.edu.br"}
+> > > buscador = Buscador("index_file.json")
+> > > result = buscador.deep_search("consulta de pesquisa")
+> > > print(result)

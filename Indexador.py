@@ -1,4 +1,5 @@
 ########## Indexador.py ##########
+from Expressoes import Expressoes
 import json
 import nltk  # natural language tokenize
 from bs4 import BeautifulSoup, element
@@ -15,18 +16,19 @@ class Indexador:
     Cada objeto da classe Indexador contém um objeto da classe Coletor, uma lista de títulos tokenizados das páginas web coletadas, um conjunto de stop words em português e um dicionário que armazena o índice invertido.
 
     Atributos:
-    \n\t`coletor (Coletor)`: Um objeto da classe Coletor.
-    \n\t`tokenized_titles (list)`: Uma lista de títulos tokenizados das páginas web coletadas.
-    \n\t`stop_words (set)`: Um conjunto de stop words em português.
-    \n\t`inverted_index (dict)`: Um dicionário que armazena o índice invertido.
+    \n\t`coletor (Coletor)`: O objeto Coletor que coletou os dados.
+    \n\t`stop_words (set)`: Um conjunto de palavras de parada.
+    \n\t`inverted_index (dict)`: O índice invertido gerado.
+    \n\t`F (dict)`: Um dicionário que armazena a frequência de cada token.
 
     Métodos:
-    \n\t`inverted_index_generator()`: Gera o índice invertido a partir dos títulos tokenizados.
-    \n\t`save_index()`: Salva o índice invertido em um arquivo JSON.
-    \n\t`weight_tokenize()`: Atualiza os pesos dos tokens no índice invertido.
-    \n\t`add_attr_inverted_index(params=None)`: Adiciona um ou mais atributos da Url ao índice invertido.
-    \n\t`update_index()`: Atualiza o índice invertido com novos dados coletados.
-    \n\t`remove_key_stop_words()`: Remove as stop words da lista de tokens.
+    \n\t`__init__(self, coletor: Coletor)`: Inicializa um objeto Indexador com o Coletor especificado.
+    \n\t`inverted_index_generator(self) -> None`: Gera o índice invertido.
+    \n\t`update_F(self) -> None`: Atualiza a frequência de cada token no índice invertido.
+    \n\t`save_index(self) -> None`: Salva o índice invertido em um arquivo JSON.
+    \n\t`weight_tokenize(self) -> None`: Calcula o peso de cada token no índice invertido.
+    \n\t`add_attr_inverted_index(self, params=None) -> None`: Adiciona atributos ao índice invertido.
+    \n\t`remove_key_stop_word(self) -> None`: Remove as palavras de parada do índice invertido.
 
     Exemplo:
     >>> coletor = Coletor("Root")
@@ -55,9 +57,9 @@ class Indexador:
         \n\t`None`
         """
         self.coletor = coletor
-        self.tokenized_titles = []
         self.stop_words = set(stopwords.words('portuguese'))
         self.inverted_index = {}
+        self.F = {}
 
     def inverted_index_generator(self) -> None:
         """
@@ -72,15 +74,56 @@ class Indexador:
         \n\t`None`
         """
         for object in self.coletor.objects_url:
-            self.tokenized_titles = []  # reset the list for each Url object
+            tokenized_titles = []  # cria uma lista para cada objeto Url
             for title in object.titles:
                 tokens = [token.lower() for token in nltk.word_tokenize(
                     title.text) if token.isalnum() and token.lower() not in self.stop_words]
-                self.tokenized_titles.extend(tokens)
+                tokenized_titles.extend(tokens)
 
-            for token in self.tokenized_titles:
+            f = {}
+            for token in tokenized_titles:
+                # lista de frequência
+                if token not in f:
+                    f[token] = 1
+                    if token not in self.F:
+                        self.F[token] = 0
+                else:
+                    f[token] += 1
+
+            for token in tokenized_titles:
+                # tokens passaram a apontar para a url
                 self.inverted_index.setdefault(
-                    token, {}).update({object.url: 1.0})
+                    token, {}).update({object.url: [f[token], self.F[token], 0, 0]})  # f, F, n, wij
+
+            for token in self.inverted_index.keys():
+                if token in f:
+                    self.F[token] += f[token]
+
+    def update_F(self) -> None:
+        """
+        Atualiza a frequência de cada token no índice invertido.
+
+        Este método percorre cada token no índice invertido e, para cada URL associada ao token, atualiza a frequência do token (F), o número de URLs em que o token ocorre (n) e o peso do token na URL (wij).
+
+        Parâmetros:
+        Nenhum
+
+        Retorno:
+        Nenhum
+        """
+        for token in self.inverted_index.keys():
+            for object_url in self.inverted_index[token].keys():
+                self.inverted_index[token][object_url][1] = self.F[token]
+                self.inverted_index[token][object_url][2] = len(
+                    self.inverted_index[token].keys())
+
+        for token in self.inverted_index.keys():
+            for object_url in self.inverted_index[token].keys():
+                self.inverted_index[token][object_url][3] = Expressoes.calcular_wij(
+                    self.inverted_index[token][object_url][0],
+                    self.inverted_index[token][object_url][1],
+                    self.inverted_index[token][object_url][2],
+                )
 
     def save_index(self):
         """
@@ -94,6 +137,7 @@ class Indexador:
         Retorno:
         \n\t`None`
         """
+        self.update_F()
         filename = self.coletor.codigo
         with open(f"index-{filename}.json", 'w') as file:
             json.dump(self.inverted_index, file, indent=4)
@@ -137,7 +181,6 @@ class Indexador:
             for attr in params:
                 attribute = getattr(object, attr, None)
                 if attribute is not None:
-                    # Convert the attribute to a string if it's a BeautifulSoup Tag, ResultSet or NavigableString
                     if isinstance(attribute, (element.Tag, element.ResultSet, element.NavigableString)):
                         attribute = [str(item) for item in attribute]
                     self.inverted_index.setdefault(
@@ -176,3 +219,10 @@ class Indexador:
         for stop_word in self.stop_words:
             if stop_word in self.inverted_index:
                 del self.inverted_index[stop_word]
+
+    # Teste a função com alguns valores
+    # i = 2
+    # n = 10
+    # ni = 3
+    # print(
+    #     f"O resultado da expressão para i={i}, n={n}, e ni={ni} é {Expressoes.calcular_wij(i, n, ni)}")
